@@ -3,9 +3,10 @@ package main
 import (
 	"os"
 	"runtime/pprof"
+	"sync"
 	"time"
 
-	agilepool "github.com/Yiming1997/go-agile-pool"
+	agilepool "github.com/Yiming1997/agilePool"
 )
 
 func main() {
@@ -35,15 +36,18 @@ func main() {
 		agilepool.WithIdleContainerType(agilepool.LinkedListType),
 	))
 
+	var submitWG sync.WaitGroup
 	for i := 0; i < 20000000; i++ {
+		submitWG.Add(1)
 		go func() {
+			defer submitWG.Done()
 			pool.Submit(agilepool.TaskFunc(func() error {
 				time.Sleep(10 * time.Millisecond)
 				return nil
 			}))
-
 		}()
 	}
 
+	submitWG.Wait()
 	pool.Wait()
 }
